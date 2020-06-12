@@ -4,14 +4,6 @@ INF='/home/mike/scripts/ntpsurvey/output.csv'
 OUTF='/home/mike/scripts/ntpsurvey/interval.log'
 TF='/tmp/srvtmp.tmp'
 
-
-
-#rsync -ua /tmp/srvtmp.tmp $TF
-
-#grep --text  $1 /tmp/srvtmp.tmp  |head -n 1 |awk '{printf "%.0f\t", ($1*86400-3.5067168E9+$2)}' |perl -pe 's/(\d+)/localtime($1)/e'
-
-#grep --text  $1 /tmp/srvtmp.tmp  |tail -n 1 |awk '{printf "%.0f\n", ($1*86400-3.5067168E9+$2)}' |perl -pe 's/(\d+)/localtime($1)/e'
-
 s=`grep --text  $1 $TF  |head -n 1 |awk '{printf "%.0f\t", ($1*86400-3.5067168E9+$2)}'`
 
 e=`grep --text  $1 $TF  |tail -n 1 |awk '{printf "%.0f\n", ($1*86400-3.5067168E9+$2)}' `
@@ -23,5 +15,7 @@ int=`echo "scale=4; $dur/$nr/60" |bc -l`
 
 echo "`date +%s` $1 $dur $nr $int" >> $OUTF
 echo "`date +%s` $1 $dur $nr $int" 
+
 curts=`date +%s`
+
 sqlite3 ntpsurvey.sdb "INSERT INTO interval (ts,serverip,interval) VALUES ('$curts','$1','$int')"
