@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo "this only removes upper spikes"
+
+sqlite3 ntpsurvey.sdb "delete from hostscores where serverip = '$1' AND avgscore <= $2"
