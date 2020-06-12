@@ -1,0 +1,3 @@
+#!/bin/bash
+mv probeload probeload.old
+ ./ps.pl |grep cfg |grep -v '192.168.1.224' |awk '{if ($1 < 100 && $4 > 1000) print "server "$2}' > probeload

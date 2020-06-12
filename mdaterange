@@ -1,0 +1,7 @@
+#!/bin/bash
+
+
+
+cat currentsample.mumbai  |head -n 1 |awk '{printf "%.0f\t", ($1*86400-3.5067168E9+$2)}' |perl -pe 's/(\d+)/localtime($1)/e'
+
+cat  currentsample.mumbai |tail -n 1 |awk '{printf "%.0f\n", ($1*86400-3.5067168E9+$2)}' |perl -pe 's/(\d+)/localtime($1)/e'

@@ -1,0 +1,49 @@
+#!/bin/bash
+#
+# main survey script, creates plot and
+# html page
+
+cd /home/mike/scripts/ntpsurvey
+
+st=`date +%s`
+tf=run$st
+of=results$st
+ss=3050
+
+mp=$((ss / 32 ))
+
+#move old results to archive, clean empties
+find -name 'results*' -size -1 -exec rm -f {} \;
+find -name 'run*' -mtime +4 -exec mv {} tempfiles/ \;
+
+echo -e "`date` starting run with sample size  $ss tempfile is $tf outfile is $of parallelism is $mp" >> surveyrun.log
+
+
+nmap -sU -p 123 --script ntp-info --min-parallelism $mp -iR $ss --open -oG $tf
+
+# parse nmap output
+cat $tf |grep Ports |awk  -F\/ '{if ($7) print systime() " "$1,$7}' |sed -e 's/://g' |sed -r 's/Ports 123|Host|\(\)//g' >> found.log
+
+
+echo `date +%s` `cat $tf |egrep 'in [0-9]{3}' |awk '{print $19}' `  >> executiontime.log
+
+#create hourly graph for animation
+cp /var/www/html/ntp/srvsinoper.png /var/www/html/ntp/srvsinoper_h`date +%H`.png 
+
+#create mainpage graphs
+#./surveyrate.plot
+#create html page
+./ps.pl
+#./dbu.sh
+./dbu2.sh
+./dbu3.pl
+./exrate.plot
+
+#create individual server score graphs
+./srvgraph.sh
+#animation
+convert -delay 20 /var/www/html/ntp/srvsinoper_h*.png /var/www/html/ntp/anim.gif
+
+#interval statistics
+#for f in `grep @@ output.csv|head -n 30|awk -F, '{print $2}'`; do echo $f `./getint $f`;done
+for f in `grep @@ output.csv |awk -F, '{if ($6 > .75) print $2}'`;do echo $f;./getint $f;done

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+TF='/mnt/disk2/srvtmp.tmp'
+
+
+grep --text  $1 /tmp/srvtmp.tmp  |head -n 1 |awk '{printf "%.0f\t", ($1*86400-3.5067168E9+$2)}' |perl -pe 's/(\d+)/localtime($1)/e'
+
+grep --text  $1 /tmp/srvtmp.tmp  |tail -n 1 |awk '{printf "%.0f\n", ($1*86400-3.5067168E9+$2)}' |perl -pe 's/(\d+)/localtime($1)/e'
+
+s=`grep --text  $1 /tmp/srvtmp.tmp  |head -n 1 |awk '{printf "%.0f\t", ($1*86400-3.5067168E9+$2)}'`
+
+e=`grep --text  $1 /tmp/srvtmp.tmp  |tail -n 1 |awk '{printf "%.0f\n", ($1*86400-3.5067168E9+$2)}' `
+
+dur=`echo $e-$s | bc -l`
+nr=`grep $1 output.csv  |awk -F, '{print $5}'`
+
+int=`echo "scale=2; $dur/$nr/60" |bc -l`
+
+echo "start $s end $e dur $dur numrec $nr interval $int m"
