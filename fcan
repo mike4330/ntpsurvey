@@ -1,0 +1,6 @@
+#!/bin/bash
+ ./ps.pl |grep cfg |sort -k 6 -k 1n |awk '{if ($5 > .36) print;}'
+
+echo ----
+
+ ntpq -pn |egrep -i 'init|local|^x|[0-9]h|[0-9]m'
