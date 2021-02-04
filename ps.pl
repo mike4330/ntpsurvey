@@ -9,14 +9,14 @@ my $reader = GeoIP2::Database::Reader->new(
 $tf="/tmp/srvtmp.tmp";
 $of='/var/www/html/ntp/survey.html';
 
-$logsample=8750;
+$logsample=9187;
 $logsample=($logsample*100);
 
 $z=`head -n 1 $tf`;
 ($a,$b)=split / /,$z;
 $ut=localtime($a*86400-3.5067168E9+$b); #MJD conversion
 
-open (CF, "/etc/ntp.conf") || die "cannot open $!";
+open (CF, "master.list") || die "cannot open $!";
 
 while (<CF>) {
 if (/^server/) {
@@ -26,7 +26,21 @@ if (/^server/) {
 	}
 }
 
-system ("cat /var/log/ntpstats/peerstats.2* /home/mike/scripts/ntpsurvey/currentsample.mumbai| tail -n $logsample > $tf");
+
+#system ("cat /var/log/ntpstats/remote/burgess/peerstats.2* /var/log/ntpstats/peerstats.2* /home/mike/scripts/ntpsurvey/currentsample.mumbai |grep --text -vi 127.127.28| tail -n $logsample > $tf");
+
+$MUMBAI_SAMP=int($logsample*.1);
+$burgess_samp=int($logsample*.96);
+$local_samp=int($logsample*.04);
+
+system ("cat currentsample.mumbai |tail -n $MUMBAI_SAMP |sort -n > mumbai.extract");
+system ("cat /var/log/ntpstats/remote/burgess/peerstats.2* |tail -n $burgess_samp > burgess.extract");
+system ("cat /var/log/ntpstats/peerstats.2* |tail -n $local_samp > local.extract");
+
+system ("cat local.extract mumbai.extract burgess.extract |grep --text -vi 127.127.28| tail -n $logsample > foo");
+
+system ("sed 's/[^[:print:]]//g' foo|sort -k1n -k2n > $tf");
+
 
 open (F,"$tf") || die "cannot open $!";
 
@@ -59,7 +73,7 @@ print O '<html><body>
 table {
   border-collapse: collapse;
   border: 1px solid black;
-  width: 76%;
+  width: 1700px;
 }
 
 td {
@@ -89,9 +103,8 @@ foreach $name (sort { $tscore{$a} <=> $tscore{$b} } keys %tscore) {
 
 foreach $val (sort { $avgc{$a} <=> $avgc{$b} } keys %avgc) {
 	if ($count{$val} < 1) {next;}
-
 	$pct=100*($count{$val}/$logsample);
-	$z=sprintf("%.3f",$avgc{$val}) ;
+	$z=sprintf("%.4f",$avgc{$val}) ;
 	$tstring='black';
 	$pct2=sprintf("%.3f", $pct);
 	$ix++;
@@ -129,7 +142,8 @@ foreach $val (sort { $avgc{$a} <=> $avgc{$b} } keys %avgc) {
 	$fs=$fs . "px"; 
 
 	if ($val !~ /192.168/) {
-		my $insights = $reader->country( ip => "$val" );
+		chomp($val);
+		my $insights = $reader->country( ip => $val );
 		my $country_rec = $insights->country();
 		$cname=$country_rec->name();
 	}

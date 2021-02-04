@@ -1,0 +1,3 @@
+#!/bin/bash
+./ps.pl > /dev/null
+grep @@ output.csv |awk -F, '{if ($5 > 1175) print'} |sort -t, -k 3,3 -k 1n,1n |column -s, -t 

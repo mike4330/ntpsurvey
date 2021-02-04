@@ -8,9 +8,9 @@ cd /home/mike/scripts/ntpsurvey
 st=`date +%s`
 tf=run$st
 of=results$st
-ss=3050
+ss=2820
 
-mp=$((ss / 32 ))
+mp=$((ss / 47 ))
 
 #move old results to archive, clean empties
 find -name 'results*' -size -1 -exec rm -f {} \;

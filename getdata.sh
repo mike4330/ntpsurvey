@@ -1,6 +1,12 @@
-#!/bin/bash
+#!/bin/sh
 # emits data for individual score graphs
-DAYS=9
+DAYS=60
+
+if [[ $2 ]] ; then DAYS=$2;fi
+
+echo "days set to $DAYS"
+
+#exit
 
 cd /home/mike/scripts/ntpsurvey
 
