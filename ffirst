@@ -16,4 +16,6 @@ nr=`grep $1 output.csv  |awk -F, '{print $5}'`
 
 int=`echo "scale=2; $dur/$nr/60" |bc -l`
 
-echo "start $s end $e dur $dur numrec $nr interval $int m"
+targetgap=$(( (dur - 604800) /3600 ))
+
+echo "dur $dur targetgap `tput rev`$targetgap hrs.`tput sgr0` numrec $nr interval $int m"
