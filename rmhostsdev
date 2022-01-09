@@ -1,0 +1,60 @@
+#!/bin/bash
+
+cd /var/log/ntpstats/remote/burgess
+
+PFX='/var/log/ntpstats/remote/burgess'
+
+tf='/tmp/rmh.tmp'
+
+cat peerstats.2021w{43..52} peerstats.2022w01 |grep $1 > $tf
+
+sd=`cat $tf|grep  $1|awk '{print $6}' |st -sd`
+jsd=`cat $tf |grep  $1|awk '{print $8}' |st -sd`
+mean=`cat $tf |grep $1 |awk '{print $6}' |st --mean`
+jmean=`cat $tf |grep $1 |awk '{print $8}' |st --mean`
+max=`cat $tf |grep $1 |awk '{print $6}' |st --max`
+omax=`cat $tf |grep $1 |awk '{print $5}' |st --max`
+omin=`cat $tf |grep $1 |awk '{print $5}' |st --min`
+
+thresh=`echo "($sd*5)+$mean" |bc -l`
+jthresh=`echo "($jsd*5)+$jmean" |bc -l`
+
+ohpct=`cat $tf |awk '{print $5}' |st --percentile=99.5`
+olpct=`cat $tf |grep $1 |awk '{print $5}' |st --percentile=.015`
+
+echo -e "delay  mean is $mean"
+echo -e "delay outlier threshold is $thresh\t max is $max"
+echo -e "jitter outlier threshold is $jthresh sd $jsd mean $jmean\t "
+echo -e "offset high percentile is $ohpct\t max is $omax"
+echo -e "offset low percentile is $olpct\t max is $omin"
+
+#read -p "Press enter to continue"
+
+for f in peerstats.2021w{42..52} ; do
+	echo $f;
+	for x in `cat $f |grep $1 |awk -v T="$thresh" '{if ($6 > T) print $6 }'`; 
+	do echo -e "$(tput setab 2) \t delay above $x $(tput sgr 0)";
+		sed -i /$x/d $f ;
+		done
+
+
+	for x in `cat $f |grep $1 |awk -v T="$jthresh" '{if ($8 > T) print $8 }'`; 
+	do echo -e "$(tput setab 3) \t jitter above $x $(tput sgr 0)";
+		sed -i /$x/d $f ;
+		done
+
+	
+	for x in `cat $f |grep $1 |awk -v T="$olpct" '{if ($5 < T) print $5 }'`; 
+	do echo -e "$(tput setab 4) \t offset below low $x $(tput sgr 0)";
+		sed -i /$x/d $f ;
+		done
+
+	for x in `cat $f |grep $1 |awk -v T="$ohpct" '{if ($5 > T) print $5 }'`; 
+		do echo -e "\toffset above high $x";
+		sed -i /$x/d $f ;
+		done
+	
+	done;
+
+
+echo "`date` outlier remove of $1" >> /scripts/ntpsurvey/rmh.log

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+PFX='/var/log/ntpstats'
+
+for f in $PFX/peerstats.202107{07..31} $PFX/peerstats.2021{08..12}*  $PFX/peerstats.2022010{1..8}  ; do
+	for x in `cat $f |grep --text 192.168.1.224 |awk -v T="$1" '{if ($5 < T) print $2}'`; 
+		do echo $f $x;
+			sed -i /$x/d $f ;
+		done
+	done;
+
+

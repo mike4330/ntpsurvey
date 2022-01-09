@@ -9,8 +9,8 @@ my $reader = GeoIP2::Database::Reader->new(
 $tf="/tmp/srvtmp.tmp";
 $of='/var/www/html/ntp/survey.html';
 
-$logsample=9187;
-$logsample=($logsample*100);
+$logsample=238;
+$logsample=($logsample*10000);
 
 $z=`head -n 1 $tf`;
 ($a,$b)=split / /,$z;
@@ -29,16 +29,17 @@ if (/^server/) {
 
 #system ("cat /var/log/ntpstats/remote/burgess/peerstats.2* /var/log/ntpstats/peerstats.2* /home/mike/scripts/ntpsurvey/currentsample.mumbai |grep --text -vi 127.127.28| tail -n $logsample > $tf");
 
-$MUMBAI_SAMP=int($logsample*.1);
+$MUMBAI_SAMP=int($logsample*.153);
 $burgess_samp=int($logsample*.96);
-$local_samp=int($logsample*.04);
+$local_samp=int($logsample*.044);
 
 system ("cat currentsample.mumbai |tail -n $MUMBAI_SAMP |sort -n > mumbai.extract");
 system ("cat /var/log/ntpstats/remote/burgess/peerstats.2* |tail -n $burgess_samp > burgess.extract");
-system ("cat /var/log/ntpstats/peerstats.2* |tail -n $local_samp > local.extract");
+system ("cat /var/log/ntpstats/peerstats.2* |grep --text '192.168.1' |tail -n $local_samp > local.extract");
 
 system ("cat local.extract mumbai.extract burgess.extract |grep --text -vi 127.127.28| tail -n $logsample > foo");
 
+# create main input file
 system ("sed 's/[^[:print:]]//g' foo|sort -k1n -k2n > $tf");
 
 
@@ -50,8 +51,8 @@ while (<F>) {
 	$offset=abs($field[4]);
 	$delay=$field[5];
 	$jitter=$field[7];
+	#score calculation
 	$score=($offset+($delay/4)+$jitter)*1000;
-
 	$tscore{$ip}=$tscore{$ip}+$score;
 	$count{$ip}++;
 	#print "$ip JI=$jitter OF=$offset DE=$delay SC=$score\n";
@@ -85,11 +86,13 @@ td {
 <title>NTP survey results</title>
 </head>
 ';
+
+
 print O "<h1>page generated at $gentime<br>";
 print O "<h2>first records at $ut<br>";
 	print O '
-	<img src="/ntp/surveyrate.png"><img src="/ntp/srvsinoper.png"><br>
-	<img src="/ntp/dead_records.png"><img src="/ntp/extime.png">
+	<img src="/ntp/surveyrate.png" width="600"><img src="/ntp/srvsinoper.png" width="600"><img src="/ntp/totalrecordcount.png" width="600"><br>
+	<img src="/ntp/dead_records.png" width="600"><img src="/ntp/extime.png" width="600">
 	<table border=1>
 	<th>#</th><th>host</th><th>score avg</th><th>numrec</th>
 	<th>pct</th><th>cfg</th>
@@ -104,7 +107,7 @@ foreach $name (sort { $tscore{$a} <=> $tscore{$b} } keys %tscore) {
 foreach $val (sort { $avgc{$a} <=> $avgc{$b} } keys %avgc) {
 	if ($count{$val} < 1) {next;}
 	$pct=100*($count{$val}/$logsample);
-	$z=sprintf("%.4f",$avgc{$val}) ;
+	$z=sprintf("%.5f",$avgc{$val}) ;
 	$tstring='black';
 	$pct2=sprintf("%.3f", $pct);
 	$ix++;
@@ -137,10 +140,12 @@ foreach $val (sort { $avgc{$a} <=> $avgc{$b} } keys %avgc) {
 	if ($z > 4.192e7) {$cstring="#0909ee";$tstring="#c8fafa";$classicon='&#127336;'} #
 	if ($z > 8.384e7) {$cstring="#0c0cee";$tstring="#c8fafa";$classicon='&#127337;'} #
 
-
-	$fs=($pct2*20)+8;
+	#font scaling
+	$fs=($pct2*18)+8;
 	$fs=$fs . "px"; 
-
+	
+	if ($val =~ "162.159.200") {print "bad val\n";next;}
+	if ($val =~ "58.65.177") {print "bad val\n";next;}
 	if ($val !~ /192.168/) {
 		chomp($val);
 		my $insights = $reader->country( ip => $val );
@@ -159,7 +164,9 @@ foreach $val (sort { $avgc{$a} <=> $avgc{$b} } keys %avgc) {
 	print T "$ix,$val,$cname,$z,$count{$val},$pct2";
 
 	print O "<td><font size=3>$classicon</td>";
-	if( $val ~~ @iplist ) {print O "<td>X</td>";print "cfg \n";print T ",\@@\n"} else {print "\n";print T "\n";}
+	if( $val ~~ @iplist ) {
+		print O "<td>X</td>";print "cfg \n";print T ",\@@\n"} 
+		else {print "\n";print T "\n";}
 }
 
 print O '</table></body></html>';
